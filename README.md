@@ -122,3 +122,31 @@ Trained Logistic Regression model saved to backend/model_files/url_model.pkl
 ```
 
 The model achieves perfect accuracy, due to the characteristics of the datasets, since the feature matrix reveals that all the numeric features are included.
+
+## Running the Frontend
+In a separate terminal inside the frontend folder, install the required packages and dependencies:
+```
+npm install
+```
+Once complete, start the frontend server:
+```
+npm run dev
+```
+It runs on port 8080.
+
+## Creating the database
+Open pgAdmin, and connect to your primary server. Create the database phishing_app, and run the SQL query below to create the users table.
+```
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+Then in the virtual environment terminal, install the required library.
+```
+pip install psycopg2-binary
+```

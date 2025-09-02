@@ -1,0 +1,45 @@
+# ===============================
+# Data Files
+# ===============================
+data/Phishing_validation_emails.csv
+data/PhiUSIIL_Phishing_URL_Dataset.csv
+
+# ===============================
+# Logs
+# ===============================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===============================
+# Node / Frontend
+# ===============================
+node_modules/
+frontend/node_modules/
+dist/
+dist-ssr/
+*.local
+
+# ===============================
+# Python / Backend
+# ===============================
+venv/
+*.pyc
+__pycache__/
+
+# ===============================
+# Editor / IDE Files
+# ===============================
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
