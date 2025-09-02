@@ -148,5 +148,10 @@ CREATE TABLE users (
 
 Then in the virtual environment terminal, install the required library.
 ```
-pip install psycopg2-binary
+pip install psycopg2-binary flask-cors
 ```
+Then run the backend server:
+```
+python -m src.app
+```
+Then navigate to the frontend and attempt to sign up and login.
