@@ -43,3 +43,5 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+
+.env

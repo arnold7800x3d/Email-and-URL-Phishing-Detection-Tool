@@ -121,7 +121,7 @@ const Landing = () => {
             <Shield className="h-6 w-6 text-primary" />
             <span className="text-lg font-semibold">PhishGuard</span>
           </div>
-          <p className="text-muted-foreground">© 2024 PhishGuard. Protecting you from digital threats.</p>
+          <p className="text-muted-foreground">© 2025 PhishGuard. Protecting you from digital threats.</p>
         </div>
       </footer>
     </div>

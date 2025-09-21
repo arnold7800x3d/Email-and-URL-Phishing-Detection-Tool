@@ -16,7 +16,7 @@ interface AnalysisResult {
 
 const Dashboard = () => {
   const [emailContent, setEmailContent] = useState("");
-  const [urlFeatures, setUrlFeatures] = useState("");
+  const [urlInput, setUrlInput] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const navigate = useNavigate();
@@ -53,21 +53,28 @@ const Dashboard = () => {
     setIsAnalyzing(true);
     
     try {
-      // TODO: Replace with actual API call to /predict/email
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock result for demo
-      const mockResult: AnalysisResult = {
-        prediction: Math.random() > 0.5 ? "Safe" : "Phishing",
-        probability: Math.random(),
-        type: "email"
+      const response = await fetch("http://127.0.0.1:5000/predict/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email_text: emailContent }),
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch");
+
+      const result = await response.json();
+
+      // Adapt backend response to your frontend AnalysisResult format
+      const analysis: AnalysisResult = {
+        prediction: result.prediction.toLowerCase().includes("phish") ? "Phishing" : "Safe",
+        probability: result.probability ?? 0.5,
+        type: "email",
       };
-      
-      setResults(prev => [mockResult, ...prev]);
-      
+
+      setResults(prev => [analysis, ...prev]);
+
       toast({
         title: "Analysis Complete",
-        description: `Email analyzed as ${mockResult.prediction}`,
+        description: `Email analyzed as ${analysis.prediction}`,
       });
     } catch (error) {
       toast({
@@ -81,33 +88,39 @@ const Dashboard = () => {
   };
 
   const analyzeUrl = async () => {
-    if (!urlFeatures.trim()) {
+    if (!urlInput.trim()) {
       toast({
         title: "Validation Error",
-        description: "Please enter URL features to analyze",
+        description: "Please enter a URL to analyze",
         variant: "destructive"
       });
       return;
     }
 
     setIsAnalyzing(true);
-    
+
     try {
-      // TODO: Replace with actual API call to /predict/url
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock result for demo
-      const mockResult: AnalysisResult = {
-        prediction: Math.random() > 0.5 ? "Safe" : "Phishing",
-        probability: Math.random(),
-        type: "url"
+      const response = await fetch("http://127.0.0.1:5000/predict/url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: urlInput }),
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch");
+
+      const result = await response.json();
+
+      const analysis: AnalysisResult = {
+        prediction: result.prediction.toLowerCase().includes("phish") ? "Phishing" : "Safe",
+        probability: result.probability ?? 0.5,
+        type: "url",
       };
-      
-      setResults(prev => [mockResult, ...prev]);
-      
+
+      setResults(prev => [analysis, ...prev]);
+
       toast({
         title: "Analysis Complete",
-        description: `URL analyzed as ${mockResult.prediction}`,
+        description: `URL analyzed as ${analysis.prediction}`,
       });
     } catch (error) {
       toast({
@@ -195,14 +208,14 @@ const Dashboard = () => {
               <div>
                 <Label htmlFor="url-features">URL Features</Label>
                 <Textarea
-                  id="url-features"
-                  placeholder="Enter comma-separated numeric features (e.g., 1.2, 0.8, 2.1, ...)"
-                  value={urlFeatures}
-                  onChange={(e) => setUrlFeatures(e.target.value)}
+                  id="url-input"
+                  placeholder="Enter the URL input here, e.g. https://www.google.com"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
                   className="min-h-32 mt-2"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  Enter the extracted numeric features from the URL for analysis
+                  Paste the full URL you want to analyze for phishing.
                 </p>
               </div>
               <Button 

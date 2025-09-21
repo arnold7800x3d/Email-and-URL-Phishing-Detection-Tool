@@ -97,31 +97,55 @@ python -m src.models.train_url_model
 The output:
 ```
 Loaded 235795 URLs.
-Feature matrix shape before scaling: (235795, 51)
+Feature matrix shape before scaling: (235795, 21)
+Feature columns saved to backend/model_files/url_feature_columns.pkl
 Scaler saved to backend/model_files/url_scaler.pkl
 Training samples: 188636, Test samples: 47159
 Logistic Regression model trained successfully.
+Feature matrix shape before scaling: (235795, 21)
+Feature columns saved to backend/model_files/url_feature_columns.pkl
+Scaler saved to backend/model_files/url_scaler.pkl
+Training samples: 188636, Test samples: 47159
+Logistic Regression model trained successfully.
+Feature columns saved to backend/model_files/url_feature_columns.pkl
+Scaler saved to backend/model_files/url_scaler.pkl
+Training samples: 188636, Test samples: 47159
+Logistic Regression model trained successfully.
+Training samples: 188636, Test samples: 47159
+Logistic Regression model trained successfully.
+Logistic Regression model trained successfully.
 
 --- Evaluation Metrics ---
-Accuracy: 1.0000
-Precision: 1.0000
-Recall: 1.0000
-F1 Score: 1.0000
+Accuracy: 0.9961
+Precision: 0.9996 (phishing)
+--- Evaluation Metrics ---
+Accuracy: 0.9961
+Precision: 0.9996 (phishing)
+Recall: 0.9913 (phishing)
+Accuracy: 0.9961
+Precision: 0.9996 (phishing)
+Recall: 0.9913 (phishing)
+Precision: 0.9996 (phishing)
+Recall: 0.9913 (phishing)
+Recall: 0.9913 (phishing)
+F1 Score: 0.9955 (phishing)
 
 Classification Report:
-              precision    recall  f1-score   support
+                precision    recall  f1-score   support
+Classification Report:
+                precision    recall  f1-score   support
 
-  Legitimate       1.00      1.00      1.00     20124
-    Phishing       1.00      1.00      1.00     27035
+  Phishing (0)       1.00      0.99      1.00     20124
+Legitimate (1)       0.99      1.00      1.00     27035
 
-    accuracy                           1.00     47159
-   macro avg       1.00      1.00      1.00     47159
-weighted avg       1.00      1.00      1.00     47159
+      accuracy                           1.00     47159
+     macro avg       1.00      1.00      1.00     47159
+  weighted avg       1.00      1.00      1.00     47159
 
-Trained Logistic Regression model saved to backend/model_files/url_model.pkl
+Trained Logistic Regression model saved to backend/model_files/url_model.pkl 
 ```
 
-The model achieves perfect accuracy, due to the characteristics of the datasets, since the feature matrix reveals that all the numeric features are included.
+The model achieves perfect accuracy, due to the characteristics of the datasets, since the feature matrix reveals that 21 of the numeric features are included.
 
 ## Running the Frontend
 In a separate terminal inside the frontend folder, install the required packages and dependencies:
@@ -145,7 +169,26 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT NOW()
 );
 ```
-
+To create the emails table:
+```
+CREATE TABLE phishguard_emails (
+    id SERIAL PRIMARY KEY,
+    email_text TEXT NOT NULL,
+    prediction VARCHAR(20) NOT NULL,
+    probability REAL NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+To create the URLs table:
+```
+CREATE TABLE phishguard_urls (
+    id SERIAL PRIMARY KEY,
+    url TEXT NOT NULL,
+    prediction VARCHAR(20) NOT NULL,
+    probability REAL NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
 Then in the virtual environment terminal, install the required library.
 ```
 pip install psycopg2-binary flask-cors
@@ -155,3 +198,9 @@ Then run the backend server:
 python -m src.app
 ```
 Then navigate to the frontend and attempt to sign up and login.
+
+## Securing sensitive info
+To avoid pushing credentials to GitHub, place them in a .env file in the root project directory. Then install the dotenv python module.
+```
+pip install python-dotenv
+```

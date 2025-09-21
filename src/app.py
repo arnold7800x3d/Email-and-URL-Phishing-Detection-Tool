@@ -1,22 +1,26 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from src.inference.predict_email import predict_email
-from src.inference.predict_url import predict_url
+from src.inference.url_features import extract_url_features
 import pandas as pd
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
+import joblib
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-# database connection
-DB_HOST = os.environ.get("DB_HOST", "localhost")
-DB_NAME = os.environ.get("DB_NAME", "phishing_app")
-DB_USER = os.environ.get("DB_USER", "postgres")
-DB_PASS = os.environ.get("DB_PASS", "7800")
-DB_PORT = os.environ.get("DB_PORT", 5432)
+# ------------------ DATABASE CONFIG ------------------ #
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
+DB_PORT = int(os.getenv("DB_PORT"))
 
 def get_db_connection():
     conn = psycopg2.connect(
@@ -29,7 +33,22 @@ def get_db_connection():
     )
     return conn
 
-# signup route
+# ------------------ LOAD MODEL & SCALER ------------------ #
+URL_MODEL_PATH = "backend/model_files/url_model.pkl"
+SCALER_PATH = "backend/model_files/url_scaler.pkl"
+FEATURE_COLUMNS_PATH = "backend/model_files/url_feature_columns.pkl"
+
+lr_model = joblib.load(URL_MODEL_PATH)
+scaler = joblib.load(SCALER_PATH)
+feature_columns = joblib.load(FEATURE_COLUMNS_PATH)
+
+# ------------------ ROUTES ------------------ #
+
+@app.route('/')
+def index():
+    return "Phishing Detection API is running."
+
+# Signup
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
@@ -60,8 +79,7 @@ def signup():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# login route
+# Login
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -83,57 +101,84 @@ def login():
             return jsonify({"message": f"Welcome, {user['name']}!"})
         else:
             return jsonify({"error": "Invalid credentials"}), 401
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# routes
-
-@app.route('/')
-def index():
-    return "Phishing Detection API is running."
-
+# Predict email
 @app.route('/predict/email', methods=['POST'])
 def predict_email_route():
-    """
-    expects a JSON
-    {
-        "email_text": "string"
-    }
-    """
     data = request.get_json()
-    email_text = data.get("email_text," "")
+    email_text = data.get("email_text", "")
     if not email_text:
         return jsonify({"error": "No email text provided"}), 400
     
     result = predict_email(email_text)
+
+    # Save to DB
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO phishguard_emails (email_text, prediction, probability) VALUES (%s, %s, %s);",
+            (email_text, result['prediction'], result['probability'])
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print("Error saving email record:", e)
+
+    print(result)
     return jsonify(result)
 
+
+# Predict URL
 @app.route('/predict/url', methods=['POST'])
 def predict_url_route():
-    """
-    Expects JSON with numeric URL features matching training columns, e.g.:
-    {
-        "URLLength": 31,
-        "DomainLength": 24,
-        "IsDomainIP": 0,
-        ...
-    }
-    """
     data = request.get_json()
-    if not data:
-        return jsonify({"error": "No URL features provided"}), 400
+    url = data.get("url", "")
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
 
-    # convert input dict to single-row DataFrame
+    # Extract features
+    df_features = extract_url_features(url)
+
+    # Ensure all features exist and match the trained model columns
+    for col in feature_columns:
+        if col not in df_features.columns:
+            df_features[col] = 0
+    df_features = df_features[feature_columns]
+
+    # Scale features
+    X_scaled = scaler.transform(df_features)
+
+    # Predict
+    prediction = lr_model.predict(X_scaled)[0]
+    probability = lr_model.predict_proba(X_scaled)[0][prediction]
+
+    result = {
+        "prediction": "Phishing" if prediction == 0 else "Legitimate",
+        "probability": float(probability)
+    }
+
+    # Save to DB
     try:
-        df_features = pd.DataFrame([data])
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO phishguard_urls (url, prediction, probability) VALUES (%s, %s, %s);",
+            (url, result['prediction'], result['probability'])
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
     except Exception as e:
-        return jsonify({"error": f"Invalid data format: {e}"}), 400
+        print("Error saving URL record:", e)
 
-    result = predict_url(df_features)
+    print(result)  # for debugging
     return jsonify(result)
 
+
+# ------------------ RUN APP ------------------ #
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-

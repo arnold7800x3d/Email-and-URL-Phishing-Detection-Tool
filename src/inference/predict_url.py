@@ -10,6 +10,9 @@ SCALER_PATH = "backend/model_files/url_scaler.pkl"
 url_model = joblib.load(MODEL_PATH)
 scaler = joblib.load(SCALER_PATH)
 
+# print the feature names expected by the model
+print("Model expects", scaler.n_features_in_, "features")
+
 def predict_url(url_features: pd.DataFrame):
     """
     predicts if a URL is phishing or legitimate
@@ -26,7 +29,7 @@ def predict_url(url_features: pd.DataFrame):
     predicted_probability = url_model.predict_proba(X_scaled)[0][predicted_class]
 
     result = {
-        'prediction': 'Phishing' if predicted_class == 1 else 'Legitimate',
+        'prediction': 'Phishing' if predicted_class == 0 else 'Legitimate',
         'probability': float(predicted_probability)
     }
     return result
